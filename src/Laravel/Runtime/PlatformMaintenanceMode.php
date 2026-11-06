@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace Ske\Bridge\Laravel\Runtime;
 
-use Illuminate\Container\Container;
 use Illuminate\Contracts\Foundation\MaintenanceMode;
-use Illuminate\Http\Request;
 use RuntimeException;
 use Ske\Bridge\Runtime\Environment;
 
@@ -23,22 +21,9 @@ use Ske\Bridge\Runtime\Environment;
  * A MAINTENANCE_MODE_SECRET variable stands in for `artisan down --secret`:
  * Laravel then lets through whoever visits /{secret} and keeps them in with
  * its bypass cookie.
- *
- * The platform also lets through the addresses on the environment's access
- * list: it marks their requests with an `SKE-Maintenance-Bypass` header
- * carrying the token it puts in SKE_MAINTENANCE_BYPASS_TOKEN, after removing
- * any copy a client sent. During a request whose header equals that token the
- * application is not in maintenance. Without a token the header is ignored,
- * so a client's copy passed along by a platform that sets none opens nothing.
- * The current request is read from the container on each check, so a
- * long-lived worker sees the request it is serving now.
  */
 final class PlatformMaintenanceMode implements MaintenanceMode
 {
-    private const BYPASS_HEADER = 'SKE-Maintenance-Bypass';
-
-    private const BYPASS_TOKEN = 'SKE_MAINTENANCE_BYPASS_TOKEN';
-
     /** @param  array<string, mixed>  $payload */
     public function activate(array $payload): void
     {
@@ -52,7 +37,7 @@ final class PlatformMaintenanceMode implements MaintenanceMode
 
     public function active(): bool
     {
-        return Environment::get('MAINTENANCE_MODE') === 'true' && ! self::bypassedByPlatform();
+        return Environment::get('MAINTENANCE_MODE') === 'true';
     }
 
     /** @return array<string, mixed> */
@@ -61,30 +46,5 @@ final class PlatformMaintenanceMode implements MaintenanceMode
         $secret = Environment::get('MAINTENANCE_MODE_SECRET');
 
         return $secret === null ? [] : ['secret' => $secret];
-    }
-
-    private static function bypassedByPlatform(): bool
-    {
-        $token = Environment::get(self::BYPASS_TOKEN);
-
-        if ($token === null) {
-            return false;
-        }
-
-        $container = Container::getInstance();
-
-        if (! $container->bound('request')) {
-            return false;
-        }
-
-        $request = $container->make('request');
-
-        if (! $request instanceof Request) {
-            return false;
-        }
-
-        $value = $request->headers->get(self::BYPASS_HEADER);
-
-        return is_string($value) && hash_equals($token, $value);
     }
 }
