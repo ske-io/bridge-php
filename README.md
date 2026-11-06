@@ -27,7 +27,7 @@ composer require aws/aws-sdk-php
 - **Logs:** writes logs to stderr, one JSON line per record, so the platform's log viewer shows level, message, context and exception.
 - **AWS credentials:** lets the AWS SDK use the function role's temporary credentials. A key pair the application sets itself still wins.
 - **Mail:** sends SES mail from the region of the mail provider linked to the environment.
-- **Maintenance mode:** follows the maintenance mode set in the SKE dashboard. See [Maintenance mode](https://ske.io/docs/deployments/maintenance).
+- **Maintenance mode:** follows the maintenance mode set in the SKE dashboard. Visitors with the `MAINTENANCE_MODE_SECRET` bypass cookie and requests from addresses on the environment's access list still reach the application. The platform marks those requests with a header carrying a secret token that it puts in `SKE_MAINTENANCE_BYPASS_TOKEN` when the instance starts; a request is let through only when the two match, and never when the token is unset. See [Maintenance mode](https://ske.io/docs/deployments/maintenance).
 - **Encrypted environment file:** loads the environment's `.env.{environment}.encrypted` when its key is set. See [Encrypted environment file](https://ske.io/docs/laravel/encrypted-environment).
 - **Inertia SSR:** when SSR is turned on for the environment, sends Inertia's render calls to the platform's SSR server. This needs `inertiajs/inertia-laravel`.
 
